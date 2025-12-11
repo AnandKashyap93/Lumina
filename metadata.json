@@ -1,0 +1,8 @@
+{
+  "name": "Lumina",
+  "description": "A mental wellness companion featuring adaptive reasoning, mood calibration, calming image generation, and crisis support.",
+  "requestFramePermissions": [
+    "geolocation",
+    "microphone"
+  ]
+}
