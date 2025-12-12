@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import { X, Mic, MicOff, Loader2, Volume2 } from 'lucide-react';
 import { pcmToStreamData, base64ToUint8Array } from '../utils/audio';
+import { getApiKey } from '../services/geminiService';
 
 interface VoiceCompanionProps {
   isOpen: boolean;
@@ -70,10 +71,7 @@ export const VoiceCompanion: React.FC<VoiceCompanionProps> = ({ isOpen, onClose,
         audioInputContextRef.current = null;
     }
 
-    // Close Session (if possible - the API doesn't expose a close method on the promise result easily in all versions, 
-    // but we can assume closing the connection logic handles it by unmounting)
-    // Actually, the example says: "When the conversation is finished, use `session.close()`".
-    // We will try to call close if available.
+    // Close Session
     sessionPromiseRef.current?.then(session => {
         try {
             if (session.close) session.close();
@@ -95,7 +93,7 @@ export const VoiceCompanion: React.FC<VoiceCompanionProps> = ({ isOpen, onClose,
     setErrorMessage('');
 
     try {
-        const apiKey = process.env.API_KEY;
+        const apiKey = getApiKey();
         if (!apiKey) throw new Error("API Key not found");
 
         const ai = new GoogleGenAI({ apiKey });

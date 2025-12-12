@@ -2,14 +2,16 @@ import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 import { LocationData, HelpResult } from "../types";
 
 // Handle API key retrieval safely for both Node/Shim environments and standard Vite environments
-const getApiKey = () => {
+export const getApiKey = () => {
   // Check if process.env exists (Node/Shim)
   if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
     return process.env.API_KEY;
   }
   // Check standard Vite env var (fallback)
-  if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_KEY) {
-    return (import.meta as any).env.VITE_API_KEY;
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
+    // Support both standard naming and the specific one in your Vercel config
+    if ((import.meta as any).env.VITE_API_KEY) return (import.meta as any).env.VITE_API_KEY;
+    if ((import.meta as any).env.VITE_GEMINI_API_KEY) return (import.meta as any).env.VITE_GEMINI_API_KEY;
   }
   return '';
 };
