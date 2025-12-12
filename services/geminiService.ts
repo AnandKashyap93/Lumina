@@ -82,14 +82,23 @@ export const generateCalmingImage = async (prompt: string): Promise<{ imageUrl: 
     // 1. Try the standard efficient model first
     return await attemptGen('gemini-2.5-flash-image');
   } catch (error: any) {
-    // 2. If quota exceeded, try the Pro model as fallback (different quota bucket)
+    // 2. If quota exceeded, try the Pro model as fallback
     if (error.message === "QUOTA_EXCEEDED") {
         console.log("Flash model quota exceeded. Falling back to Pro model...");
         try {
             return await attemptGen('gemini-3-pro-image-preview');
         } catch (fallbackError: any) {
-             let msg = "Traffic limit reached on all models. Please wait a minute.";
-             return { imageUrl: null, error: msg };
+             // 3. FINAL FALLBACK: Pollinations.ai (Free, Unlimited)
+             // This ensures the user ALWAYS gets an image, even if Gemini is down/limited.
+             console.log("Gemini quotas exhausted. Falling back to Pollinations.ai.");
+             
+             // Clean prompt for URL
+             const safePrompt = encodeURIComponent(`${prompt} soothing, cinematic lighting, 8k, serene`);
+             // Generate random seed to ensure new images on refresh
+             const randomSeed = Math.floor(Math.random() * 10000);
+             const url = `https://image.pollinations.ai/prompt/${safePrompt}?width=1280&height=720&nologo=true&seed=${randomSeed}&model=flux`;
+             
+             return { imageUrl: url };
         }
     }
 
