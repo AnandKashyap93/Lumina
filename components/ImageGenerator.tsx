@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { generateCalmingImage } from '../services/geminiService';
 import { CalibrationData } from '../types';
-import { Image as ImageIcon, Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { Image as ImageIcon, Loader2, RefreshCw, Sparkles, AlertCircle } from 'lucide-react';
 
 interface ImageGeneratorProps {
     calibration: CalibrationData | null;
@@ -10,9 +10,12 @@ interface ImageGeneratorProps {
 export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ calibration }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const generate = async () => {
     setLoading(true);
+    setError(null);
+    
     // Construct a prompt based on calibration, tuned for the specific requested aesthetic
     const moodDesc = calibration?.mood ? (calibration.mood > 5 ? 'warm golden hour sunbeams, uplifting atmosphere, vibrant greens and golds' : 'soft misty morning, pastel pink and purple sky, calming fog, serene stillness') : 'peaceful nature scene';
     const energyDesc = calibration?.energy ? (calibration.energy > 5 ? 'flowing forest stream, dynamic light rays' : 'still lake reflection, deep ancient forest, cozy rainy window view') : 'balanced composition';
@@ -21,7 +24,13 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ calibration }) =
     const prompt = `Cinematic nature photography, 8k resolution. ${moodDesc}, ${energyDesc}, ${context}. Elements: lush mossy forests, misty lakes, sunbeams through trees, or cozy minimalist interiors looking at nature. Ethereal lighting, magical realism, highly detailed, serene, masterpiece, photorealistic.`;
     
     const result = await generateCalmingImage(prompt);
-    if (result) setImageUrl(result);
+    
+    if (result.imageUrl) {
+        setImageUrl(result.imageUrl);
+    } else if (result.error) {
+        setError(result.error);
+    }
+    
     setLoading(false);
   };
 
@@ -45,6 +54,17 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ calibration }) =
             <Loader2 className="w-8 h-8 animate-spin" />
             <span className="text-xs">Generating safe space...</span>
           </div>
+        ) : error ? (
+            <div className="flex flex-col items-center gap-2 text-red-400 px-4 text-center">
+                <AlertCircle className="w-8 h-8 opacity-80" />
+                <span className="text-xs">{error}</span>
+                <button 
+                    onClick={generate}
+                    className="mt-2 px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
+                >
+                    Try Again
+                </button>
+            </div>
         ) : imageUrl ? (
             <>
                 <img src={imageUrl} alt="Generated scene" className="w-full h-full object-cover animate-fade-in transition-transform duration-700 group-hover:scale-105" />
@@ -63,7 +83,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ calibration }) =
         )}
       </div>
       
-      {!loading && !imageUrl && (
+      {!loading && !imageUrl && !error && (
          <button 
             onClick={generate}
             className="w-full py-3 border border-gray-200 dark:border-slate-600 rounded-xl text-sm font-medium hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"

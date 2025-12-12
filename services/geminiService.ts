@@ -43,7 +43,7 @@ export const sendMessage = async (message: string): Promise<string> => {
 };
 
 // --- Image Generation Service ---
-export const generateCalmingImage = async (prompt: string): Promise<string | null> => {
+export const generateCalmingImage = async (prompt: string): Promise<{ imageUrl: string | null; error?: string }> => {
   try {
     // Using gemini-2.5-flash-image (Nano Banana) for efficient generation
     const response = await ai.models.generateContent({
@@ -58,13 +58,20 @@ export const generateCalmingImage = async (prompt: string): Promise<string | nul
 
     for (const part of response.candidates?.[0]?.content?.parts || []) {
       if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+        return { imageUrl: `data:image/png;base64,${part.inlineData.data}` };
       }
     }
-    return null;
-  } catch (error) {
+    return { imageUrl: null, error: "No visual data received." };
+  } catch (error: any) {
     console.error("Image gen error:", error);
-    return null;
+    let errorMessage = "Unable to generate image at this moment.";
+    
+    // Handle Quota/Rate Limit errors (429)
+    if (error.toString().includes('429') || error.message?.includes('quota') || error.message?.includes('exhausted')) {
+        errorMessage = "Traffic limit reached. Please wait a moment and try again.";
+    }
+    
+    return { imageUrl: null, error: errorMessage };
   }
 };
 
