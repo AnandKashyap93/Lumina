@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MicroHabit } from '../types';
-import { Check, Plus } from 'lucide-react';
+import { Check, Plus, Trash2 } from 'lucide-react';
 
 interface MicroHabitsProps {
     isDarkMode: boolean;
@@ -14,6 +14,11 @@ export const MicroHabits: React.FC<MicroHabitsProps> = ({ isDarkMode }) => {
 
   const toggleHabit = (id: string) => {
     setHabits(habits.map(h => h.id === id ? { ...h, completed: !h.completed } : h));
+  };
+
+  const deleteHabit = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setHabits(habits.filter(h => h.id !== id));
   };
 
   const addHabit = (e: React.FormEvent) => {
@@ -39,7 +44,7 @@ export const MicroHabits: React.FC<MicroHabitsProps> = ({ isDarkMode }) => {
           <div 
             key={habit.id} 
             onClick={() => toggleHabit(habit.id)}
-            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
+            className={`group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
                 habit.completed 
                 ? 'bg-teal-50 border-teal-100 dark:bg-teal-900/20 dark:border-teal-900/30' 
                 : 'bg-gray-50 border-gray-100 dark:bg-slate-900 dark:border-slate-700 hover:border-teal-200'
@@ -50,9 +55,17 @@ export const MicroHabits: React.FC<MicroHabitsProps> = ({ isDarkMode }) => {
             }`}>
                 {habit.completed && <Check className="w-3 h-3 text-white" />}
             </div>
-            <span className={`text-sm ${habit.completed ? 'text-gray-400 line-through' : ''}`}>
+            <span className={`text-sm flex-1 ${habit.completed ? 'text-gray-400 line-through' : ''}`}>
               {habit.text}
             </span>
+            
+            <button
+                onClick={(e) => deleteHabit(e, habit.id)}
+                className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                title="Delete habit"
+            >
+                <Trash2 className="w-4 h-4" />
+            </button>
           </div>
         ))}
       </div>
