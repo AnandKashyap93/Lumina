@@ -44,34 +44,56 @@ export const sendMessage = async (message: string): Promise<string> => {
 
 // --- Image Generation Service ---
 export const generateCalmingImage = async (prompt: string): Promise<{ imageUrl: string | null; error?: string }> => {
-  try {
-    // Using gemini-2.5-flash-image (Nano Banana) for efficient generation
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [
-          { text: `Generate a photorealistic, high-quality image. ${prompt}. Ensure atmospheric lighting, soft textures, and a calming composition.` }
-        ]
-      },
-      // Nano banana does not support responseMimeType or specific schema, relies on inlineData response
-    });
+  
+  // Helper to attempt generation with a specific model
+  const attemptGen = async (model: string): Promise<{ imageUrl: string | null; error?: string }> => {
+    try {
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: {
+          parts: [
+            { text: `Generate a photorealistic, high-quality image. ${prompt}. Ensure atmospheric lighting, soft textures, and a calming composition.` }
+          ]
+        },
+        // Only apply imageConfig for the Pro model if we are using it
+        config: model.includes('pro') ? {
+            imageConfig: { aspectRatio: '16:9', imageSize: '1K' }
+        } : undefined
+      });
 
-    for (const part of response.candidates?.[0]?.content?.parts || []) {
-      if (part.inlineData) {
-        return { imageUrl: `data:image/png;base64,${part.inlineData.data}` };
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData) {
+          return { imageUrl: `data:image/png;base64,${part.inlineData.data}` };
+        }
       }
+      return { imageUrl: null, error: "No visual data received." };
+    } catch (error: any) {
+        console.error(`Error with model ${model}:`, error);
+        
+        // Detect quota issues
+        if (error.toString().includes('429') || error.message?.includes('quota') || error.message?.includes('exhausted')) {
+            throw new Error("QUOTA_EXCEEDED");
+        }
+        throw error;
     }
-    return { imageUrl: null, error: "No visual data received." };
+  };
+
+  try {
+    // 1. Try the standard efficient model first
+    return await attemptGen('gemini-2.5-flash-image');
   } catch (error: any) {
-    console.error("Image gen error:", error);
-    let errorMessage = "Unable to generate image at this moment.";
-    
-    // Handle Quota/Rate Limit errors (429)
-    if (error.toString().includes('429') || error.message?.includes('quota') || error.message?.includes('exhausted')) {
-        errorMessage = "Traffic limit reached. Please wait a moment and try again.";
+    // 2. If quota exceeded, try the Pro model as fallback (different quota bucket)
+    if (error.message === "QUOTA_EXCEEDED") {
+        console.log("Flash model quota exceeded. Falling back to Pro model...");
+        try {
+            return await attemptGen('gemini-3-pro-image-preview');
+        } catch (fallbackError: any) {
+             let msg = "Traffic limit reached on all models. Please wait a minute.";
+             return { imageUrl: null, error: msg };
+        }
     }
-    
-    return { imageUrl: null, error: errorMessage };
+
+    return { imageUrl: null, error: "Unable to generate image at this moment." };
   }
 };
 

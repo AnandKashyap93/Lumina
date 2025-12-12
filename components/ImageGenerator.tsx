@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { generateCalmingImage } from '../services/geminiService';
 import { CalibrationData } from '../types';
 import { Image as ImageIcon, Loader2, RefreshCw, Sparkles, AlertCircle } from 'lucide-react';
@@ -11,8 +11,10 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ calibration }) =
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasInitiatedRef = useRef(false);
 
   const generate = async () => {
+    if (loading) return;
     setLoading(true);
     setError(null);
     
@@ -34,9 +36,10 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ calibration }) =
     setLoading(false);
   };
 
-  // Auto generate on mount
+  // Auto generate on mount, with strict mode protection
   useEffect(() => {
-    if (!imageUrl) {
+    if (!imageUrl && !hasInitiatedRef.current) {
+        hasInitiatedRef.current = true;
         generate();
     }
   }, []);
@@ -59,7 +62,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ calibration }) =
                 <AlertCircle className="w-8 h-8 opacity-80" />
                 <span className="text-xs">{error}</span>
                 <button 
-                    onClick={generate}
+                    onClick={() => generate()}
                     className="mt-2 px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-medium hover:bg-red-200 transition-colors"
                 >
                     Try Again
@@ -69,7 +72,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ calibration }) =
             <>
                 <img src={imageUrl} alt="Generated scene" className="w-full h-full object-cover animate-fade-in transition-transform duration-700 group-hover:scale-105" />
                 <button 
-                    onClick={generate}
+                    onClick={() => generate()}
                     className="absolute bottom-3 right-3 p-2 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white/40 transition-colors opacity-0 group-hover:opacity-100"
                     title="Regenerate"
                 >
@@ -85,7 +88,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ calibration }) =
       
       {!loading && !imageUrl && !error && (
          <button 
-            onClick={generate}
+            onClick={() => generate()}
             className="w-full py-3 border border-gray-200 dark:border-slate-600 rounded-xl text-sm font-medium hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
          >
             <Sparkles className="w-4 h-4 text-teal-500" /> Generate Safe Space
