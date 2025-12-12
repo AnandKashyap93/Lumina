@@ -1,7 +1,20 @@
 import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 import { LocationData, HelpResult } from "../types";
 
-const apiKey = process.env.API_KEY || '';
+// Handle API key retrieval safely for both Node/Shim environments and standard Vite environments
+const getApiKey = () => {
+  // Check if process.env exists (Node/Shim)
+  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    return process.env.API_KEY;
+  }
+  // Check standard Vite env var (fallback)
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_API_KEY) {
+    return (import.meta as any).env.VITE_API_KEY;
+  }
+  return '';
+};
+
+const apiKey = getApiKey();
 const ai = new GoogleGenAI({ apiKey });
 
 // --- Chat Service ---
